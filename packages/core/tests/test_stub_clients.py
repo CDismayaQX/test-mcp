@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from prolook_mcp_core.clients.stub import StubOrderClient, StubProductClient
+from prolook_mcp_core.clients.stub import StubDocSearchClient, StubOrderClient, StubProductClient
 from prolook_mcp_core.types import BrandContext
 
 
@@ -56,3 +56,27 @@ async def test_stub_product_client_other_brand_returns_empty() -> None:
     ctx = make_brand_context(brand_id="unknown-brand")
     designs = await client.list_designs(ctx)
     assert designs == []
+
+
+# ---------------------------------------------------------------------------
+# StubDocSearchClient
+# ---------------------------------------------------------------------------
+
+
+async def test_stub_doc_search_client_returns_results() -> None:
+    client = StubDocSearchClient()
+    results = await client.search("helmet specs", None, 5)
+    assert len(results) > 0
+    assert all("id" in r and "title" in r for r in results)
+
+
+async def test_stub_doc_search_client_respects_top_k() -> None:
+    client = StubDocSearchClient()
+    results = await client.search("anything", None, 1)
+    assert len(results) == 1
+
+
+async def test_stub_doc_search_client_top_k_zero_returns_empty() -> None:
+    client = StubDocSearchClient()
+    results = await client.search("anything", None, 0)
+    assert results == []
