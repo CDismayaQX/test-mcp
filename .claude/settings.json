@@ -1,0 +1,52 @@
+{
+  "model": "claude-sonnet-4-6",
+  "permissions": {
+    "allow_file_write": true,
+    "allow_shell": true,
+    "allow_network": false,
+    "shell_allowlist": [
+      "uv", "pytest", "ruff", "mypy",
+      "docker", "docker-compose",
+      "git", "make",
+      "bash", "psql", "curl", "grep", "find", "ls", "cat"
+    ]
+  },
+  "hooks": {
+    "pre_tool_use": [
+      {
+        "matcher": "Write",
+        "command": "bash .claude/hooks/pre-edit.sh \"$file_path\""
+      },
+      {
+        "matcher": "Edit",
+        "command": "bash .claude/hooks/pre-edit.sh \"$file_path\""
+      },
+      {
+        "matcher": "Write",
+        "command": "bash .claude/hooks/pre-edit-claude-warning.sh \"$file_path\""
+      },
+      {
+        "matcher": "Edit",
+        "command": "bash .claude/hooks/pre-edit-claude-warning.sh \"$file_path\""
+      },
+      {
+        "matcher": "Bash",
+        "command": "bash .claude/hooks/pre-run.sh \"$command\""
+      }
+    ],
+    "post_tool_use": [
+      {
+        "matcher": "Write",
+        "command": "bash .claude/hooks/post-edit.sh \"$file_path\""
+      },
+      {
+        "matcher": "Edit",
+        "command": "bash .claude/hooks/post-edit.sh \"$file_path\""
+      },
+      {
+        "matcher": "Bash",
+        "command": "bash .claude/hooks/post-run.sh \"$command\" \"$exit_code\""
+      }
+    ]
+  }
+}
