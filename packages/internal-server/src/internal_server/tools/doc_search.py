@@ -6,30 +6,30 @@ from typing import Any
 
 import fastmcp
 from prolook_mcp_core.audit.logger import write_audit_event
-from prolook_mcp_core.clients.interfaces import IProductClient
+from prolook_mcp_core.clients.interfaces import IDocSearchClient
 from prolook_mcp_core.errors import PROLOOKUnavailableError
 from prolook_mcp_core.log import Log
-from prolook_mcp_core.types import AuditEvent, BrandContext, ToolResult
+from prolook_mcp_core.types import AuditEvent, ToolResult
 
-from brand_server.context import get_brand_context
-
-_TOOL_NAME = "list_designs"
+_TOOL_NAME = "doc_search"
 _TOOL_VERSION = "1.0"
 
 
-async def _handle_list_designs(
-    client: IProductClient,
-    brand_ctx: BrandContext,
+async def _handle_doc_search(
+    query: str,
+    kb_ids: list[str] | None,
+    top_k: int,
+    client: IDocSearchClient,
 ) -> ToolResult:
-    """Core logic for list designs — directly testable without FastMCP."""
+    """Core logic for doc search — directly testable without FastMCP."""
     try:
-        designs = await client.list_designs(brand_ctx)
-        return ToolResult.ok(data=designs)
+        results = await client.search(query, kb_ids, top_k)
+        return ToolResult.ok(data={"results": results, "query": query})
     except PROLOOKUnavailableError as exc:
         Log.error("tool_error", tool=_TOOL_NAME, error=str(exc))
         return ToolResult.fail(
-            code="PROLOOK_UNAVAILABLE",
-            message="PROLOOK is temporarily unavailable. Retry in a moment.",
+            code="RAG_UNAVAILABLE",
+            message="The document search service is temporarily unavailable. Retry in a moment.",
             retryable=True,
         )
     except Exception:
@@ -40,22 +40,26 @@ async def _handle_list_designs(
         )
 
 
-def register_list_designs(mcp: fastmcp.FastMCP, client: IProductClient) -> None:
+def register_doc_search(mcp: fastmcp.FastMCP, client: IDocSearchClient) -> None:
     @mcp.tool()
-    async def list_designs() -> dict[str, Any]:
-        """List all product designs available to the authenticated brand."""
+    async def doc_search(
+        query: str, kb_ids: list[str] | None = None, top_k: int = 5
+    ) -> dict[str, Any]:
+        """Search knowledge base documents by semantic similarity.
+
+        Use for product specs, policies, or internal guides.
+        """
         started = time.monotonic()
-        brand_ctx = get_brand_context()
-        result = await _handle_list_designs(client, brand_ctx)
+        result = await _handle_doc_search(query, kb_ids, top_k, client)
+        count = len(result.data["results"]) if result.data else 0
 
         await write_audit_event(
             AuditEvent(
                 request_id=str(uuid.uuid4()),
-                brand_id=brand_ctx.brand_id,
                 tool_name=_TOOL_NAME,
                 tool_version=_TOOL_VERSION,
-                input_args={},
-                output_summary=f"status={result.status}",
+                input_args={"query": query, "kb_ids": kb_ids, "top_k": top_k},
+                output_summary=f"status={result.status}, count={count}",
                 output_size_bytes=len(str(result.model_dump())),
                 latency_ms=int((time.monotonic() - started) * 1000),
                 status=result.status,

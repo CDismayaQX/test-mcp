@@ -1,29 +1,33 @@
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 from prolook_mcp_core.config import settings
 from prolook_mcp_core.log import Log
 from prolook_mcp_core.types import AuditEvent
 
-try:
+if TYPE_CHECKING:
     import asyncpg
+
+try:
+    import asyncpg as _asyncpg_mod
 
     _ASYNCPG_AVAILABLE = True
 except ImportError:
     _ASYNCPG_AVAILABLE = False
 
-_pool: object | None = None
+_pool: asyncpg.Pool | None = None
 
 _TRUNCATE_SUMMARY_CHARS: int = 500
 
 
-async def _get_pool() -> object:
+async def _get_pool() -> asyncpg.Pool:
     global _pool
     if _pool is None:
         if not _ASYNCPG_AVAILABLE:
             raise RuntimeError("asyncpg is required for audit logging")
-        _pool = await asyncpg.create_pool(  # type: ignore[union-attr]
+        _pool = await _asyncpg_mod.create_pool(
             dsn=settings.database_dsn,
             min_size=1,
             max_size=5,
@@ -35,7 +39,7 @@ async def write_audit_event(event: AuditEvent) -> None:
     """Write one audit row. Never raises — audit failures must not break tool calls."""
     try:
         pool = await _get_pool()
-        async with pool.acquire() as conn:  # type: ignore[union-attr]
+        async with pool.acquire() as conn:
             await conn.execute(
                 """
                 INSERT INTO mcp_audit_log (
@@ -72,5 +76,5 @@ async def close_pool() -> None:
     """Call at server shutdown."""
     global _pool
     if _pool is not None:
-        await _pool.close()  # type: ignore[union-attr]
+        await _pool.close()
         _pool = None

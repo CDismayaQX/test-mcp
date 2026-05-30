@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from typing import Any
 
 import fastmcp
 from prolook_mcp_core.audit.logger import write_audit_event
@@ -51,7 +52,7 @@ async def _handle_order_lookup(
 
 def register_order_lookup(mcp: fastmcp.FastMCP, client: IOrderClient) -> None:
     @mcp.tool()
-    async def order_lookup(order_id: str, brand_id: str | None = None) -> dict:
+    async def order_lookup(order_id: str, brand_id: str | None = None) -> dict[str, Any]:
         """Look up an order by ID. Internal use — optionally scoped to a specific brand."""
         started = time.monotonic()
         result = await _handle_order_lookup(order_id, brand_id, client)

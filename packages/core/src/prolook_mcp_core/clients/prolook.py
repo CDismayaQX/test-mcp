@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import httpx
 
-from prolook_mcp_core.clients.interfaces import IOrderClient, IProductClient
+from prolook_mcp_core.clients.interfaces import IDocSearchClient, IOrderClient, IProductClient
 from prolook_mcp_core.config import settings
 from prolook_mcp_core.errors import PROLOOKUnavailableError
 from prolook_mcp_core.log import Log
@@ -20,7 +22,7 @@ class ProlookOrderClient(IOrderClient):
             timeout=_TIMEOUT_SECONDS,
         )
 
-    async def get_order(self, order_id: str, brand_context: BrandContext) -> dict | None:
+    async def get_order(self, order_id: str, brand_context: BrandContext) -> dict[str, Any] | None:
         try:
             response = await self._http.get(f"/api/orders/{order_id}")
         except httpx.RequestError as exc:
@@ -36,7 +38,7 @@ class ProlookOrderClient(IOrderClient):
             )
             raise PROLOOKUnavailableError(f"Unexpected status {response.status_code}")
 
-        order = response.json()
+        order = cast(dict[str, Any], response.json())
         if order.get("brand_id") != brand_context.brand_id:
             Log.warning(
                 "brand_scope_blocked",
@@ -56,7 +58,7 @@ class ProlookProductClient(IProductClient):
             timeout=_TIMEOUT_SECONDS,
         )
 
-    async def list_designs(self, brand_context: BrandContext) -> list[dict]:
+    async def list_designs(self, brand_context: BrandContext) -> list[dict[str, Any]]:
         try:
             response = await self._http.get(
                 "/api/designs",
@@ -73,5 +75,34 @@ class ProlookProductClient(IProductClient):
             )
             raise PROLOOKUnavailableError(f"Unexpected status {response.status_code}")
 
-        designs: list[dict] = response.json()
+        designs = cast(list[dict[str, Any]], response.json())
         return [d for d in designs if d.get("brand_id") == brand_context.brand_id]
+
+
+class ProlookDocSearchClient(IDocSearchClient):
+    """HTTP client for RAG doc search via the AI Platform API's internal endpoint."""
+
+    def __init__(self) -> None:
+        self._http = httpx.AsyncClient(
+            base_url=settings.AI_PLATFORM_API_URL,
+            headers={"X-Service-Key": settings.INTERNAL_SERVICE_KEY},
+            timeout=_TIMEOUT_SECONDS,
+        )
+
+    async def search(
+        self, query: str, kb_ids: list[str] | None, top_k: int
+    ) -> list[dict[str, Any]]:
+        try:
+            response = await self._http.post(
+                "/internal/rag/search",
+                json={"query": query, "kb_ids": kb_ids, "top_k": top_k},
+            )
+        except httpx.RequestError as exc:
+            raise PROLOOKUnavailableError(str(exc)) from exc
+
+        if response.status_code != 200:
+            Log.error("rag_search_error", status=response.status_code)
+            raise PROLOOKUnavailableError(f"Unexpected status {response.status_code}")
+
+        results = cast(list[dict[str, Any]], response.json())
+        return results
