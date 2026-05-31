@@ -13,7 +13,7 @@ class InternalSettings(Settings):
         extra="ignore",
     )
 
-    host: str = "0.0.0.0"
+    host: str = "0.0.0.0"  # noqa: S104
     port: int = 8001
     internal_service_key: str = ""
 

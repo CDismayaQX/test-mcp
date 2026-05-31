@@ -26,7 +26,7 @@ async def _handle_echo(message: str, force_error: bool, brand_ctx: BrandContext)
 def register_echo(mcp: fastmcp.FastMCP) -> None:
     @mcp.tool()
     async def echo(message: str, force_error: bool = False) -> dict[str, Any]:
-        """Echo a message back with the authenticated brand ID. Set force_error=true to test the error path."""
+        """Echo the message back with brand_id. Set force_error=true to test the error path."""
         started = time.monotonic()
         brand_ctx = get_brand_context()
         result = await _handle_echo(message, force_error, brand_ctx)

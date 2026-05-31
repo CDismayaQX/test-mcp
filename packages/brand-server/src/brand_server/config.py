@@ -13,7 +13,7 @@ class BrandSettings(Settings):
         extra="ignore",
     )
 
-    host: str = "0.0.0.0"
+    host: str = "0.0.0.0"  # noqa: S104
     port: int = 8002
     rate_limit_per_minute: int = 120
     bcrypt_rounds: int = 12

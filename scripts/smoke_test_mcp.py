@@ -7,6 +7,7 @@ Expected output:
   Initialize OK: ...
   Tools: ['ping', 'order_lookup', 'doc_search']
 """
+
 from __future__ import annotations
 
 import asyncio
