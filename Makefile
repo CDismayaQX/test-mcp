@@ -1,4 +1,4 @@
-.PHONY: install dev-internal dev-brand test lint fix db-migrate build-internal build-brand
+.PHONY: install dev-internal dev-brand test lint fix build-internal build-brand
 
 install:
 	uv sync
@@ -18,11 +18,6 @@ lint:
 
 fix:
 	uv run ruff check --fix . && uv run ruff format .
-
-db-migrate:
-	@echo "Running MCP table migrations against $$DB_DATABASE on $$DB_HOST:$$DB_PORT"
-	PGPASSWORD=$$DB_PASSWORD psql -h $$DB_HOST -p $$DB_PORT -U $$DB_USER -d $$DB_DATABASE \
-	  -f scripts/create_tables.sql
 
 build-internal:
 	docker build -t prolook-mcp-internal:latest -f packages/internal-server/Dockerfile .
