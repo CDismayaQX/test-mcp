@@ -11,12 +11,13 @@ Expected output:
 from __future__ import annotations
 
 import asyncio
+import os
 
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-_SERVICE_KEY = "a72c0a768741577a77f677e4aa2af181cc2517cfd41ed4db42a1740302b75910"
-_MCP_URL = "http://localhost:8001/mcp"
+_SERVICE_KEY = os.environ["INTERNAL_SERVICE_KEY"]
+_MCP_URL = os.getenv("MCP_INTERNAL_URL", "http://localhost:8001/mcp")
 _TIMEOUT_SECONDS = 10.0
 
 

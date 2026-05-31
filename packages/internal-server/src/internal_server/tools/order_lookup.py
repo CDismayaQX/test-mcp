@@ -22,13 +22,19 @@ async def _handle_order_lookup(
     brand_id: str | None,
     client: IOrderClient,
 ) -> ToolResult:
-    """Core logic for order lookup — directly testable without FastMCP."""
+    """Core logic for order lookup — directly testable without FastMCP.
+
+    Falls back to split-order lookup when the regular endpoint returns nothing,
+    so callers never need to know which order type an ID belongs to.
+    """
     ctx = BrandContext(
         brand_id=brand_id or _INTERNAL_BRAND_ID,
         brand_name=brand_id or _INTERNAL_BRAND_NAME,
     )
     try:
         order = await client.get_order(order_id, ctx)
+        if order is None:
+            order = await client.get_order_split(order_id, ctx)
         if order is None:
             return ToolResult.fail(
                 code="ORDER_NOT_FOUND",
@@ -53,7 +59,7 @@ async def _handle_order_lookup(
 def register_order_lookup(mcp: fastmcp.FastMCP, client: IOrderClient) -> None:
     @mcp.tool()
     async def order_lookup(order_id: str, brand_id: str | None = None) -> dict[str, Any]:
-        """Look up an order by ID. Internal use — optionally scoped to a specific brand."""
+        """Look up an order by ID (regular or split). Internal use — optionally scoped to a specific brand."""
         started = time.monotonic()
         result = await _handle_order_lookup(order_id, brand_id, client)
 

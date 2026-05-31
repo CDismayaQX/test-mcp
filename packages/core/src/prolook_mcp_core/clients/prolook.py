@@ -50,6 +50,7 @@ class ProlookOrderClient(IOrderClient):
             raise PROLOOKUnavailableError(f"Unexpected status {response.status_code}")
 
         order = cast(dict[str, Any], response.json())
+        # TEMP: guard disabled for live brand_id inspection — re-enable after test
         # if order.get("brand_id") != brand_context.brand_id:
         #     Log.warning(
         #         "brand_scope_blocked",

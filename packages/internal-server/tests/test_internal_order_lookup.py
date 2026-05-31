@@ -44,9 +44,23 @@ async def test_order_lookup_found_with_brand_id_returns_ok_result() -> None:
     assert called_ctx.brand_id == "riddell"
 
 
-async def test_order_lookup_not_found_returns_error_result() -> None:
+async def test_order_lookup_falls_back_to_split_when_regular_not_found() -> None:
     client = make_mock_client()
     client.get_order.return_value = None
+    split_order = {**_STUB_ORDER, "type": "split"}
+    client.get_order_split.return_value = split_order
+
+    result = await _handle_order_lookup("ORD-SPLIT", None, client)
+
+    assert result.status == "ok"
+    assert result.data == split_order
+    client.get_order_split.assert_awaited_once()
+
+
+async def test_order_lookup_not_found_in_both_returns_error() -> None:
+    client = make_mock_client()
+    client.get_order.return_value = None
+    client.get_order_split.return_value = None
 
     result = await _handle_order_lookup("ORD-404", None, client)
 
@@ -106,6 +120,7 @@ async def test_order_lookup_audit_written_with_correct_fields() -> None:
 async def test_order_lookup_audit_written_on_error_path() -> None:
     client = make_mock_client()
     client.get_order.return_value = None
+    client.get_order_split.return_value = None
 
     server = fastmcp.FastMCP(name="test", version="0.0.0")
     register_order_lookup(server, client)
