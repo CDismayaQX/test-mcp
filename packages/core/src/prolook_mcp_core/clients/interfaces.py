@@ -12,6 +12,11 @@ class IOrderClient(ABC):
         self, order_id: str, brand_context: BrandContext
     ) -> dict[str, Any] | None: ...
 
+    @abstractmethod
+    async def get_order_split(
+        self, order_id: str, brand_context: BrandContext
+    ) -> dict[str, Any] | None: ...
+
 
 class IProductClient(ABC):
     @abstractmethod

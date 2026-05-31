@@ -17,6 +17,7 @@ from internal_server.config import settings
 from internal_server.middleware import ServiceKeyMiddleware
 from internal_server.tools.doc_search import register_doc_search
 from internal_server.tools.order_lookup import register_order_lookup
+from internal_server.tools.order_split_lookup import register_order_split_lookup
 from internal_server.tools.ping import register_ping
 
 mcp = fastmcp.FastMCP(name="prolook-internal", version="0.1.0")
@@ -26,10 +27,12 @@ _doc_search_client = ProlookDocSearchClient()
 
 register_ping(mcp)
 register_order_lookup(mcp, _order_client)
+register_order_split_lookup(mcp, _order_client)
 register_doc_search(mcp, _doc_search_client)
 
 _mcp_app = mcp.http_app(
-    transport="sse",
+    transport="http",
+    stateless_http=True,
     middleware=[Middleware(ServiceKeyMiddleware)],
 )
 
@@ -38,7 +41,8 @@ _mcp_app = mcp.http_app(
 async def _lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     await init_audit_pool()
     Log.info("server_started", server="prolook-internal")
-    yield
+    async with _mcp_app.lifespan(app):
+        yield
     await close_audit_pool()
     await _order_client.aclose()
     await _doc_search_client.aclose()

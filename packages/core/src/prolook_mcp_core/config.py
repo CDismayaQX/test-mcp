@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # AI Platform API URL — internal server calls this for doc_search
     AI_PLATFORM_API_URL: str = "http://localhost:8000"
 
+    # Prolook public API — open endpoint, no auth required
+    PROLOOK_PUBLIC_API_URL: str = "https://api.prolook.com"
+
     # Environment
     ENV: str = "local"
 

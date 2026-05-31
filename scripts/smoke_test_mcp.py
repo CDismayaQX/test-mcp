@@ -5,7 +5,7 @@ Run while the internal server is up:
 
 Expected output:
   Initialize OK: ...
-  Tools: ['ping', 'order_lookup', 'doc_search']
+  Tools: ['ping', 'order_lookup', 'order_split_lookup', 'doc_search']
 """
 
 from __future__ import annotations
@@ -13,18 +13,18 @@ from __future__ import annotations
 import asyncio
 
 from mcp import ClientSession
-from mcp.client.sse import sse_client
+from mcp.client.streamable_http import streamablehttp_client
 
 _SERVICE_KEY = "a72c0a768741577a77f677e4aa2af181cc2517cfd41ed4db42a1740302b75910"
-_SSE_URL = "http://localhost:8001/sse"
+_MCP_URL = "http://localhost:8001/mcp"
 _TIMEOUT_SECONDS = 10.0
 
 
 async def main() -> None:
-    async with sse_client(
-        _SSE_URL,
+    async with streamablehttp_client(
+        _MCP_URL,
         headers={"X-Api-Key": _SERVICE_KEY},
-    ) as (read, write):
+    ) as (read, write, _):
         async with ClientSession(read, write) as session:
             result = await asyncio.wait_for(session.initialize(), timeout=_TIMEOUT_SECONDS)
             print("Initialize OK:", result)

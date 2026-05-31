@@ -9,8 +9,8 @@ A Python monorepo containing two MCP servers and a shared core library.
 - **`packages/brand-server`** — MCP server for external brands (Riddell, New
   Balance, …). Per-brand API key auth, multi-tenant, rate limited. Runs on **:8002**.
 
-Each server deploys as its own independent service. Transport is SSE
-(Server-Sent Events over HTTP).
+Each server deploys as its own independent service. Transport is streamable-HTTP
+(stateless, served at `/mcp`).
 
 ## Prerequisites
 

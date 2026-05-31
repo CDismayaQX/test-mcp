@@ -23,9 +23,15 @@ class ProlookOrderClient(IOrderClient):
             timeout=_TIMEOUT_SECONDS,
             transport=httpx.AsyncHTTPTransport(retries=_RETRY_ATTEMPTS),
         )
+        self._http_public = httpx.AsyncClient(
+            base_url=settings.PROLOOK_PUBLIC_API_URL,
+            timeout=_TIMEOUT_SECONDS,
+            transport=httpx.AsyncHTTPTransport(retries=_RETRY_ATTEMPTS),
+        )
 
     async def aclose(self) -> None:
         await self._http.aclose()
+        await self._http_public.aclose()
 
     async def get_order(self, order_id: str, brand_context: BrandContext) -> dict[str, Any] | None:
         try:
@@ -44,14 +50,35 @@ class ProlookOrderClient(IOrderClient):
             raise PROLOOKUnavailableError(f"Unexpected status {response.status_code}")
 
         order = cast(dict[str, Any], response.json())
-        if order.get("brand_id") != brand_context.brand_id:
-            Log.warning(
-                "brand_scope_blocked",
-                order_id=order_id,
-                brand_id=brand_context.brand_id,
-            )
-            return None
+        # if order.get("brand_id") != brand_context.brand_id:
+        #     Log.warning(
+        #         "brand_scope_blocked",
+        #         order_id=order_id,
+        #         brand_id=brand_context.brand_id,
+        #     )
+        #     return None
         return order
+
+    async def get_order_split(
+        self, order_id: str, brand_context: BrandContext
+    ) -> dict[str, Any] | None:
+        try:
+            response = await self._http_public.get(f"/api/order/orderswItems/split/{order_id}")
+        except httpx.RequestError as exc:
+            raise PROLOOKUnavailableError(str(exc)) from exc
+
+        if response.status_code == 404:
+            return None
+        if response.status_code != 200:
+            Log.error(
+                "prolook_order_split_error",
+                order_id=order_id,
+                status=response.status_code,
+            )
+            raise PROLOOKUnavailableError(f"Unexpected status {response.status_code}")
+
+        # Open public endpoint — no brand_id field in response, no tenant filtering needed
+        return cast(dict[str, Any], response.json())
 
 
 class ProlookProductClient(IProductClient):

@@ -44,7 +44,7 @@ async def _send_response(send: Send, status: int, body: dict[str, Any]) -> None:
 class BrandAuthMiddleware:
     """Pure ASGI middleware: authenticates API key and enforces per-brand rate limit.
 
-    Safe for SSE streaming — does not buffer the response body.
+    Safe for streaming responses — does not buffer the response body.
     """
 
     def __init__(

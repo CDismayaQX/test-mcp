@@ -40,7 +40,7 @@ async def _send_401(send: Any) -> None:
 class ServiceKeyMiddleware:
     """Pure ASGI middleware: validates the internal service-to-service API key.
 
-    Safe for SSE streaming — does not buffer the response body.
+    Safe for streaming responses — does not buffer the response body.
     """
 
     def __init__(self, app: ASGIApp) -> None:

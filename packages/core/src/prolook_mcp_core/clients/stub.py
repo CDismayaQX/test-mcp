@@ -22,6 +22,19 @@ _STUB_ORDERS: dict[str, dict[str, Any]] = {
     },
 }
 
+_STUB_SPLIT_ORDERS: dict[str, dict[str, Any]] = {
+    "2c5d74fed842": {
+        "id": "2c5d74fed842",
+        "brand_id": "test-brand-001",
+        "status": "split",
+        "created_at": "2026-01-15T10:00:00Z",
+        "splits": [
+            {"split_id": "SPL-001", "items": [{"sku": "HELM-RED-L", "qty": 1}]},
+            {"split_id": "SPL-002", "items": [{"sku": "HELM-RED-M", "qty": 1}]},
+        ],
+    },
+}
+
 _STUB_DESIGNS: list[dict[str, Any]] = [
     {
         "id": "DES-001",
@@ -43,6 +56,16 @@ class StubOrderClient(IOrderClient):
 
     async def get_order(self, order_id: str, brand_context: BrandContext) -> dict[str, Any] | None:
         order = _STUB_ORDERS.get(order_id)
+        if order is None:
+            return None
+        if order["brand_id"] != brand_context.brand_id:
+            return None
+        return order
+
+    async def get_order_split(
+        self, order_id: str, brand_context: BrandContext
+    ) -> dict[str, Any] | None:
+        order = _STUB_SPLIT_ORDERS.get(order_id)
         if order is None:
             return None
         if order["brand_id"] != brand_context.brand_id:

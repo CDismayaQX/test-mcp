@@ -20,6 +20,7 @@ from brand_server.db import init_pool as init_db_pool
 from brand_server.middleware import BrandAuthMiddleware
 from brand_server.tools.list_designs import register_list_designs
 from brand_server.tools.order_lookup import register_order_lookup
+from brand_server.tools.order_split_lookup import register_order_split_lookup
 from brand_server.tools.ping import register_ping
 
 mcp = fastmcp.FastMCP(name="prolook-brand", version="0.1.0")
@@ -30,10 +31,12 @@ _redis = aioredis.Redis.from_url(settings.REDIS_URL, decode_responses=False)
 
 register_ping(mcp)
 register_order_lookup(mcp, _order_client)
+register_order_split_lookup(mcp, _order_client)
 register_list_designs(mcp, _product_client)
 
 _mcp_app = mcp.http_app(
-    transport="sse",
+    transport="http",
+    stateless_http=True,
     middleware=[
         Middleware(
             BrandAuthMiddleware,
@@ -49,7 +52,8 @@ async def _lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     await init_db_pool()
     await init_audit_pool()
     Log.info("server_started", server="prolook-brand")
-    yield
+    async with _mcp_app.lifespan(app):
+        yield
     await close_db_pool()
     await close_audit_pool()
     await _order_client.aclose()
