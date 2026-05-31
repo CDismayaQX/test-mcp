@@ -11,7 +11,7 @@ dev-dependencies = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py312"
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 ignore = ["B008"]
 
@@ -19,7 +19,7 @@ ignore = ["B008"]
 quote-style = "double"
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.12"
 strict = true
 ignore_missing_imports = true
 

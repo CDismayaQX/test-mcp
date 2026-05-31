@@ -35,7 +35,7 @@ _mcp_app = mcp.http_app(
 
 
 @asynccontextmanager
-async def _lifespan(app: Starlette) -> AsyncGenerator[None]:
+async def _lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     await init_audit_pool()
     Log.info("server_started", server="prolook-internal")
     yield
