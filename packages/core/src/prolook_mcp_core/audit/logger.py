@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import TYPE_CHECKING
 
@@ -18,21 +19,28 @@ except ImportError:
     _ASYNCPG_AVAILABLE = False
 
 _pool: asyncpg.Pool | None = None
+_pool_lock: asyncio.Lock = asyncio.Lock()
 
 _TRUNCATE_SUMMARY_CHARS: int = 500
 
 
 async def _get_pool() -> asyncpg.Pool:
     global _pool
-    if _pool is None:
-        if not _ASYNCPG_AVAILABLE:
-            raise RuntimeError("asyncpg is required for audit logging")
-        _pool = await _asyncpg_mod.create_pool(
-            dsn=settings.database_dsn,
-            min_size=1,
-            max_size=5,
-        )
+    async with _pool_lock:
+        if _pool is None:
+            if not _ASYNCPG_AVAILABLE:
+                raise RuntimeError("asyncpg is required for audit logging")
+            _pool = await _asyncpg_mod.create_pool(
+                dsn=settings.database_dsn,
+                min_size=1,
+                max_size=5,
+            )
     return _pool
+
+
+async def init_pool() -> None:
+    """Pre-warm the pool at server startup."""
+    await _get_pool()
 
 
 async def write_audit_event(event: AuditEvent) -> None:

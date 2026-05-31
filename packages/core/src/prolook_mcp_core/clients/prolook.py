@@ -11,6 +11,7 @@ from prolook_mcp_core.log import Log
 from prolook_mcp_core.types import BrandContext
 
 _TIMEOUT_SECONDS: float = 10.0
+_RETRY_ATTEMPTS: int = 2
 
 
 class ProlookOrderClient(IOrderClient):
@@ -20,7 +21,11 @@ class ProlookOrderClient(IOrderClient):
         self._http = httpx.AsyncClient(
             base_url=settings.AI_PLATFORM_API_URL,
             timeout=_TIMEOUT_SECONDS,
+            transport=httpx.AsyncHTTPTransport(retries=_RETRY_ATTEMPTS),
         )
+
+    async def aclose(self) -> None:
+        await self._http.aclose()
 
     async def get_order(self, order_id: str, brand_context: BrandContext) -> dict[str, Any] | None:
         try:
@@ -56,7 +61,11 @@ class ProlookProductClient(IProductClient):
         self._http = httpx.AsyncClient(
             base_url=settings.AI_PLATFORM_API_URL,
             timeout=_TIMEOUT_SECONDS,
+            transport=httpx.AsyncHTTPTransport(retries=_RETRY_ATTEMPTS),
         )
+
+    async def aclose(self) -> None:
+        await self._http.aclose()
 
     async def list_designs(self, brand_context: BrandContext) -> list[dict[str, Any]]:
         try:
@@ -87,7 +96,11 @@ class ProlookDocSearchClient(IDocSearchClient):
             base_url=settings.AI_PLATFORM_API_URL,
             headers={"X-Service-Key": settings.INTERNAL_SERVICE_KEY},
             timeout=_TIMEOUT_SECONDS,
+            transport=httpx.AsyncHTTPTransport(retries=_RETRY_ATTEMPTS),
         )
+
+    async def aclose(self) -> None:
+        await self._http.aclose()
 
     async def search(
         self, query: str, kb_ids: list[str] | None, top_k: int
