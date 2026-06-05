@@ -48,6 +48,17 @@ Replace the trivial logic with:
 
 Never raise. Never accept `brand_id` as input.
 
+**Brand server** — get brand context via ContextVar inside the tool handler:
+```python
+from brand_server.context import get_brand_context
+...
+brand_ctx = get_brand_context()
+result = await _handle_...(param, client, brand_ctx)
+```
+Pass `brand_ctx` to the client method and set `brand_id=brand_ctx.brand_id` in `AuditEvent`.
+
+**Internal server** — omit `get_brand_context()`. Set `brand_id=None` in `AuditEvent`.
+
 ## STEP 5 — Register the tool
 In `packages/{server}/src/{pkg}/main.py`:
 ```python

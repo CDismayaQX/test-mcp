@@ -58,6 +58,9 @@ from prolook_mcp_core.errors import PROLOOKUnavailableError
 from prolook_mcp_core.log import Log
 from prolook_mcp_core.types import AuditEvent, BrandContext, ToolResult
 
+# brand server only — omit for internal server:
+# from brand_server.context import get_brand_context
+
 _TOOL_NAME = "$TOOL_NAME"
 _TOOL_VERSION = "1.0"
 
@@ -96,12 +99,14 @@ def register_$TOOL_NAME(mcp: fastmcp.FastMCP, client: $CLIENT_IFACE) -> None:
     async def $TOOL_NAME(param: str) -> dict[str, Any]:  # ← replace params
         """<description for the LLM — what does this tool do and when to call it>"""
         started = time.monotonic()
+        # brand server only: brand_ctx = get_brand_context()
+        # then pass brand_ctx to _handle_ and use brand_ctx.brand_id in AuditEvent
         result = await _handle_$TOOL_NAME(param, client)
 
         await write_audit_event(
             AuditEvent(
                 request_id=str(uuid.uuid4()),
-                brand_id=None,  # ← brand server: use ctx.brand_context.brand_id
+                brand_id=None,  # ← brand server: use brand_ctx.brand_id
                 tool_name=_TOOL_NAME,
                 tool_version=_TOOL_VERSION,
                 input_args={"param": param},
@@ -118,8 +123,10 @@ def register_$TOOL_NAME(mcp: fastmcp.FastMCP, client: $CLIENT_IFACE) -> None:
 
 **Brand server rules:**
 - Do NOT accept `brand_id` as a parameter — it comes from middleware
-- Pass `ctx: BrandContext` (resolved from auth) into the client call
-- Set `brand_id=ctx.brand_id` in `AuditEvent`
+- Call `brand_ctx = get_brand_context()` inside the tool handler (ContextVar — do NOT add it as a parameter)
+- Pass `brand_ctx` into `_handle_` and into the client method
+- Set `brand_id=brand_ctx.brand_id` in `AuditEvent`
+- Add `from brand_server.context import get_brand_context` to imports
 
 **Internal server rules:**
 - `brand_id` may be accepted as an optional parameter
